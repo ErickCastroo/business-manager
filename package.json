@@ -1,0 +1,44 @@
+{
+  "name": "business-manager",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Business Manager monorepo",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "npm run build -w @business-manager/contracts && npm run prisma:generate -w @business-manager/api",
+    "audit": "npm audit --audit-level=high",
+    "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev -w @business-manager/api\" \"npm run dev -w @business-manager/web\"",
+    "build": "npm run build -w @business-manager/contracts && npm run build -w @business-manager/api && npm run build -w @business-manager/web",
+    "typecheck": "npm run typecheck -w @business-manager/contracts && npm run typecheck -w @business-manager/api && npm run typecheck -w @business-manager/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.1": true,
+    "prisma@7.10.1": true,
+    "esbuild@0.28.2": true,
+    "argon2@0.45.2": true,
+    "@scarf/scarf": false
+  }
+}

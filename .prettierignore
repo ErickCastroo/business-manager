@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+apps/api/src/generated/prisma/
+
+# These are source documents and must remain byte-for-byte identical to the supplied files.
+AGENTS.md
+docs/PRODUCT_SPEC.md
+

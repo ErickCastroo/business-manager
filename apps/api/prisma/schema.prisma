@@ -1,0 +1,202 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model Currency {
+  code          String     @id @map("CurrencyCode") @db.Char(3)
+  name          String     @map("Name") @db.NVarChar(50)
+  symbol        String     @map("Symbol") @db.NVarChar(10)
+  decimalPlaces Int        @map("DecimalPlaces") @db.TinyInt
+  isActive      Boolean    @map("IsActive") @db.Bit
+  businesses    Business[]
+
+  @@map("Currencies")
+}
+
+model User {
+  id              BigInt         @id @default(autoincrement()) @map("UserId")
+  email           String         @unique(map: "UQ_Users_Email") @map("Email") @db.NVarChar(200)
+  passwordHash    String         @map("PasswordHash") @db.NVarChar(500)
+  firstName       String         @map("FirstName") @db.NVarChar(100)
+  lastName        String?        @map("LastName") @db.NVarChar(100)
+  phone           String?        @map("Phone") @db.NVarChar(30)
+  status          Int            @map("Status") @db.TinyInt
+  emailVerifiedAt DateTime?      @map("EmailVerifiedAt") @db.DateTime2
+  lastLoginAt     DateTime?      @map("LastLoginAt") @db.DateTime2
+  createdAt       DateTime       @default(now()) @map("CreatedAt") @db.DateTime2
+  updatedAt       DateTime?      @updatedAt @map("UpdatedAt") @db.DateTime2
+  businessUsers   BusinessUser[]
+  refreshTokens   RefreshToken[]
+
+  @@map("Users")
+}
+
+model Business {
+  id                 BigInt         @id @default(autoincrement()) @map("BusinessId")
+  name               String         @map("Name") @db.NVarChar(150)
+  legalName          String?        @map("LegalName") @db.NVarChar(200)
+  taxId              String?        @map("TaxId") @db.NVarChar(30)
+  email              String?        @map("Email") @db.NVarChar(200)
+  phone              String?        @map("Phone") @db.NVarChar(30)
+  baseCurrencyCode   String         @map("BaseCurrencyCode") @db.Char(3)
+  timezone           String         @map("Timezone") @db.NVarChar(80)
+  allowNegativeStock Boolean        @default(false) @map("AllowNegativeStock") @db.Bit
+  status             Int            @map("Status") @db.TinyInt
+  createdAt          DateTime       @default(now()) @map("CreatedAt") @db.DateTime2
+  updatedAt          DateTime?      @updatedAt @map("UpdatedAt") @db.DateTime2
+  baseCurrency       Currency       @relation(fields: [baseCurrencyCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+  branches           Branch[]
+  roles              Role[]
+  businessUsers      BusinessUser[]
+  auditLogs          AuditLog[]
+
+  @@index([baseCurrencyCode], map: "IX_Businesses_BaseCurrencyCode")
+  @@map("Businesses")
+}
+
+model Branch {
+  id                 BigInt             @id @default(autoincrement()) @map("BranchId")
+  businessId         BigInt             @map("BusinessId")
+  code               String             @map("Code") @db.NVarChar(20)
+  name               String             @map("Name") @db.NVarChar(120)
+  phone              String?            @map("Phone") @db.NVarChar(30)
+  addressLine1       String?            @map("AddressLine1") @db.NVarChar(200)
+  addressLine2       String?            @map("AddressLine2") @db.NVarChar(200)
+  city               String?            @map("City") @db.NVarChar(100)
+  state              String?            @map("State") @db.NVarChar(100)
+  countryCode        String             @default("MX") @map("CountryCode") @db.Char(2)
+  postalCode         String?            @map("PostalCode") @db.NVarChar(15)
+  timezone           String             @map("Timezone") @db.NVarChar(80)
+  isMain             Boolean            @map("IsMain") @db.Bit
+  isActive           Boolean            @map("IsActive") @db.Bit
+  createdAt          DateTime           @default(now()) @map("CreatedAt") @db.DateTime2
+  updatedAt          DateTime?          @updatedAt @map("UpdatedAt") @db.DateTime2
+  business           Business           @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userBranchAccesses UserBranchAccess[]
+  auditLogs          AuditLog[]
+
+  @@unique([businessId, code], map: "UQ_Branches_BusinessId_Code")
+  @@unique([businessId, id], map: "AK_Branches_BusinessId_BranchId")
+  @@map("Branches")
+}
+
+model Role {
+  id              BigInt           @id @default(autoincrement()) @map("RoleId")
+  businessId      BigInt           @map("BusinessId")
+  code            String           @map("Code") @db.NVarChar(50)
+  name            String           @map("Name") @db.NVarChar(80)
+  description     String?          @map("Description") @db.NVarChar(250)
+  isSystem        Boolean          @map("IsSystem") @db.Bit
+  isActive        Boolean          @map("IsActive") @db.Bit
+  business        Business         @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rolePermissions RolePermission[]
+  businessUsers   BusinessUser[]
+
+  @@unique([businessId, code], map: "UQ_Roles_BusinessId_Code")
+  @@unique([businessId, id], map: "AK_Roles_BusinessId_RoleId")
+  @@map("Roles")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement()) @map("PermissionId")
+  code            String           @unique(map: "UQ_Permissions_Code") @map("Code") @db.NVarChar(100)
+  description     String           @map("Description") @db.NVarChar(250)
+  rolePermissions RolePermission[]
+
+  @@map("Permissions")
+}
+
+model RolePermission {
+  roleId       BigInt     @map("RoleId")
+  permissionId Int        @map("PermissionId")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([roleId, permissionId], map: "PK_RolePermissions")
+  @@index([permissionId], map: "IX_RolePermissions_PermissionId")
+  @@map("RolePermissions")
+}
+
+model BusinessUser {
+  id                 BigInt             @id @default(autoincrement()) @map("BusinessUserId")
+  businessId         BigInt             @map("BusinessId")
+  userId             BigInt             @map("UserId")
+  roleId             BigInt             @map("RoleId")
+  isOwner            Boolean            @map("IsOwner") @db.Bit
+  isActive           Boolean            @map("IsActive") @db.Bit
+  joinedAt           DateTime           @default(now()) @map("JoinedAt") @db.DateTime2
+  business           Business           @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user               User               @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role               Role               @relation(fields: [businessId, roleId], references: [businessId, id], onDelete: NoAction, onUpdate: NoAction)
+  userBranchAccesses UserBranchAccess[]
+  auditLogs          AuditLog[]
+
+  @@unique([businessId, userId], map: "UQ_BusinessUsers_BusinessId_UserId")
+  @@unique([businessId, id], map: "AK_BusinessUsers_BusinessId_BusinessUserId")
+  @@index([userId], map: "IX_BusinessUsers_UserId")
+  @@index([businessId, roleId], map: "IX_BusinessUsers_BusinessId_RoleId")
+  @@map("BusinessUsers")
+}
+
+model UserBranchAccess {
+  businessId     BigInt       @map("BusinessId")
+  businessUserId BigInt       @map("BusinessUserId")
+  branchId       BigInt       @map("BranchId")
+  businessUser   BusinessUser @relation(fields: [businessId, businessUserId], references: [businessId, id], onDelete: NoAction, onUpdate: NoAction)
+  branch         Branch       @relation(fields: [businessId, branchId], references: [businessId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([businessUserId, branchId], map: "PK_UserBranchAccess")
+  @@index([businessId, branchId], map: "IX_UserBranchAccess_BusinessId_BranchId")
+  @@map("UserBranchAccess")
+}
+
+model RefreshToken {
+  id                BigInt         @id @default(autoincrement()) @map("RefreshTokenId")
+  userId            BigInt         @map("UserId")
+  tokenHash         String         @unique(map: "UQ_RefreshTokens_TokenHash") @map("TokenHash") @db.Char(64)
+  expiresAt         DateTime       @map("ExpiresAt") @db.DateTime2
+  revokedAt         DateTime?      @map("RevokedAt") @db.DateTime2
+  replacedByTokenId BigInt?        @map("ReplacedByTokenId")
+  userAgent         String?        @map("UserAgent") @db.NVarChar(500)
+  ipAddress         String?        @map("IpAddress") @db.NVarChar(45)
+  createdAt         DateTime       @default(now()) @map("CreatedAt") @db.DateTime2
+  user              User           @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replacedByToken   RefreshToken?  @relation("RefreshTokenRotation", fields: [replacedByTokenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  previousTokens    RefreshToken[] @relation("RefreshTokenRotation")
+
+  @@index([userId, expiresAt], map: "IX_RefreshTokens_UserId_ExpiresAt")
+  @@index([userId, revokedAt], map: "IX_RefreshTokens_UserId_RevokedAt")
+  @@index([replacedByTokenId], map: "IX_RefreshTokens_ReplacedByTokenId")
+  @@map("RefreshTokens")
+}
+
+model AuditLog {
+  id             BigInt        @id @default(autoincrement()) @map("AuditLogId")
+  businessId     BigInt        @map("BusinessId")
+  businessUserId BigInt?       @map("BusinessUserId")
+  branchId       BigInt?       @map("BranchId")
+  action         String        @map("Action") @db.NVarChar(40)
+  entityType     String        @map("EntityType") @db.NVarChar(80)
+  entityId       String        @map("EntityId") @db.NVarChar(80)
+  beforeJson     String?       @map("BeforeJson") @db.NVarChar(Max)
+  afterJson      String?       @map("AfterJson") @db.NVarChar(Max)
+  requestId      String?       @map("RequestId") @db.NVarChar(80)
+  ipAddress      String?       @map("IpAddress") @db.NVarChar(45)
+  createdAt      DateTime      @default(now()) @map("CreatedAt") @db.DateTime2
+  business       Business      @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  businessUser   BusinessUser? @relation(fields: [businessId, businessUserId], references: [businessId, id], onDelete: NoAction, onUpdate: NoAction)
+  branch         Branch?       @relation(fields: [businessId, branchId], references: [businessId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([businessId, createdAt(sort: Desc)], map: "IX_AuditLogs_BusinessId_CreatedAt")
+  @@index([businessId, entityType, entityId], map: "IX_AuditLogs_BusinessId_Entity")
+  @@index([businessId, businessUserId], map: "IX_AuditLogs_BusinessId_BusinessUserId")
+  @@index([businessId, branchId], map: "IX_AuditLogs_BusinessId_BranchId")
+  @@map("AuditLogs")
+}
