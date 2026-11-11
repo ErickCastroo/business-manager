@@ -29,8 +29,15 @@ describe('AuthSecurity', () => {
     expect(payload).toBeDefined();
     expect(signature).toBeDefined();
     await expect(security.verifyAccessToken(accessToken)).resolves.toBe(42n);
+
+    if (signature === undefined) {
+      throw new Error('The generated access token does not contain a signature.');
+    }
+
+    const tamperedSignature = `${signature[0] === 'A' ? 'B' : 'A'}${signature.slice(1)}`;
+
     await expect(
-      security.verifyAccessToken(`${header}.${payload}.${signature?.slice(0, -1)}x`),
+      security.verifyAccessToken(`${header}.${payload}.${tamperedSignature}`),
     ).rejects.toThrow();
   });
 
