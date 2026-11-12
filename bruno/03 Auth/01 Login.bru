@@ -1,0 +1,51 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+  tags: [
+    auth
+    smoke
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{testEmail}}",
+    "password": "{{testPassword}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("accessToken", res.getBody().data.token.accessToken);
+    bru.setVar("testUserId", res.getBody().data.user.id);
+  }
+}
+
+tests {
+  test("starts an authenticated session", function () {
+    const body = res.getBody();
+
+    expect(res.getStatus()).to.equal(200);
+    expect(body.data.token.accessToken).to.be.a("string").and.not.be.empty;
+    expect(body.data.token.tokenType).to.equal("Bearer");
+    expect(body.data.user.email).to.equal("bruno.local@example.test");
+    expect(body.meta.requestId).to.be.a("string").and.not.be.empty;
+  });
+
+  test("receives the refresh token only as a cookie", function () {
+    expect(res.getHeader("set-cookie")).to.exist;
+    expect(JSON.stringify(res.getBody())).to.not.contain("business_manager_refresh");
+  });
+}
+
+docs {
+  Guarda accessToken y testUserId como variables efímeras. La cookie HttpOnly se
+  conserva exclusivamente en el cookie jar de Bruno.
+}

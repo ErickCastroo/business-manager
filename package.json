@@ -14,6 +14,8 @@
   "scripts": {
     "postinstall": "npm run build -w @business-manager/contracts && npm run prisma:generate -w @business-manager/api",
     "audit": "npm audit --audit-level=high",
+    "bruno:setup": "cd bruno && npx --yes --package @usebruno/cli@4.3.0 bru run --env local -r --tags setup --bail",
+    "bruno:test": "cd bruno && npx --yes --package @usebruno/cli@4.3.0 bru run --env local -r --exclude-tags setup --bail",
     "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev -w @business-manager/api\" \"npm run dev -w @business-manager/web\"",
     "build": "npm run build -w @business-manager/contracts && npm run build -w @business-manager/api && npm run build -w @business-manager/web",
     "typecheck": "npm run typecheck -w @business-manager/contracts && npm run typecheck -w @business-manager/api && npm run typecheck -w @business-manager/web",

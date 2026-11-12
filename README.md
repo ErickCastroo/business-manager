@@ -32,6 +32,8 @@ La aplicación web queda disponible en `http://localhost:5173` y la API en
 ## Scripts de la raíz
 
 - `npm run audit`: falla si npm detecta vulnerabilidades altas o críticas.
+- `npm run bruno:setup`: prepara idempotentemente el usuario técnico local de Bruno.
+- `npm run bruno:test`: ejecuta la colección Bruno sin repetir el registro inicial.
 - `npm run dev`: inicia web y API en modo de desarrollo.
 - `npm run build`: compila contratos, API y web.
 - `npm run typecheck`: verifica TypeScript estricto en todos los proyectos.
@@ -55,6 +57,30 @@ Para ejecutar únicamente las pruebas de la API:
 ```bash
 npm test -w @business-manager/api
 ```
+
+## Colección Bruno
+
+La carpeta `bruno/` contiene una colección versionada para probar la API real sin
+guardar tokens ni secretos en Git. Incluye health, OpenAPI y el flujo completo de
+autenticación: registro de preparación, login, `me`, refresh, rotación de sesión,
+logout y rechazo del refresh después del logout.
+
+Con la API local ejecutándose, prepara una sola vez el usuario técnico local:
+
+```bash
+npm run bruno:setup
+```
+
+Después puedes ejecutar repetidamente la colección principal:
+
+```bash
+npm run bruno:test
+```
+
+También puedes abrir directamente la carpeta `bruno/` desde Bruno y seleccionar
+el ambiente `local`. Consulta [bruno/README.md](bruno/README.md) para conocer el
+orden de las peticiones, las credenciales locales deliberadamente públicas y las
+reglas para agregar módulos futuros.
 
 ## Autenticación
 
@@ -119,6 +145,7 @@ apps/
 packages/
   contracts/           Contratos compartidos
   tsconfig/             Configuraciones TypeScript compartidas
+bruno/                  Colección ejecutable para probar la API local
 docs/
   API.md                Autenticación, contratos HTTP y OpenAPI
   DATABASE.md           Configuración, migraciones y seed de SQL Server

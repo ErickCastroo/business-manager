@@ -1,0 +1,36 @@
+meta {
+  name: OpenAPI
+  type: http
+  seq: 2
+  tags: [
+    smoke
+    system
+  ]
+}
+
+get {
+  url: {{baseUrl}}/openapi.json
+  body: none
+  auth: none
+}
+
+tests {
+  test("publishes OpenAPI 3.1", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().openapi).to.equal("3.1.0");
+  });
+
+  test("documents every authentication operation", function () {
+    const paths = res.getBody().paths;
+
+    expect(paths).to.have.property("/api/v1/auth/register");
+    expect(paths).to.have.property("/api/v1/auth/login");
+    expect(paths).to.have.property("/api/v1/auth/refresh");
+    expect(paths).to.have.property("/api/v1/auth/logout");
+    expect(paths).to.have.property("/api/v1/auth/me");
+  });
+}
+
+docs {
+  Verifica que la documentación de desarrollo expone las cinco operaciones auth.
+}

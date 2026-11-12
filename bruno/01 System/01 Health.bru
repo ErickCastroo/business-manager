@@ -1,0 +1,32 @@
+meta {
+  name: Health
+  type: http
+  seq: 1
+  tags: [
+    smoke
+    system
+  ]
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+tests {
+  test("returns the service status", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ status: "ok" });
+  });
+
+  test("returns a generated request ID", function () {
+    expect(res.getHeader("x-request-id")).to.match(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+  });
+}
+
+docs {
+  Comprueba que la API está disponible y que el middleware genera X-Request-Id.
+}

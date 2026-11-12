@@ -1,0 +1,50 @@
+meta {
+  name: Register local test user
+  type: http
+  seq: 1
+  tags: [
+    auth
+    setup
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{testEmail}}",
+    "password": "{{testPassword}}",
+    "firstName": "{{testFirstName}}",
+    "lastName": "{{testLastName}}"
+  }
+}
+
+tests {
+  test("creates the local user or confirms that it exists", function () {
+    expect([201, 409]).to.include(res.getStatus());
+  });
+
+  test("returns the expected contract", function () {
+    const body = res.getBody();
+
+    if (res.getStatus() === 201) {
+      expect(body.data.user.email).to.equal("bruno.local@example.test");
+      expect(body.data.token.accessToken).to.be.a("string").and.not.be.empty;
+      expect(body.meta.requestId).to.be.a("string").and.not.be.empty;
+      expect(res.getHeader("set-cookie")).to.exist;
+      return;
+    }
+
+    expect(body.error.code).to.equal("EMAIL_ALREADY_REGISTERED");
+    expect(body.error.requestId).to.be.a("string").and.not.be.empty;
+  });
+}
+
+docs {
+  Preparación local idempotente. Se excluye de npm run bruno:test para evitar
+  consumir innecesariamente el rate limit de registro.
+}

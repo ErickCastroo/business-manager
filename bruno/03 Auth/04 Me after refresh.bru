@@ -1,0 +1,34 @@
+meta {
+  name: Me after refresh
+  type: http
+  seq: 4
+  tags: [
+    auth
+    smoke
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("accepts the rotated access token", function () {
+    const body = res.getBody();
+
+    expect(res.getStatus()).to.equal(200);
+    expect(body.data.user.id).to.equal(bru.getVar("testUserId"));
+    expect(body.data.user.email).to.equal("bruno.local@example.test");
+    expect(body.meta.requestId).to.be.a("string").and.not.be.empty;
+  });
+}
+
+docs {
+  Confirma que el access token emitido por refresh permite consultar el perfil.
+}

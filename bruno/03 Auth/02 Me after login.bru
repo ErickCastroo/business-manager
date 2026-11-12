@@ -1,0 +1,35 @@
+meta {
+  name: Me after login
+  type: http
+  seq: 2
+  tags: [
+    auth
+    smoke
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("returns the authenticated global identity", function () {
+    const body = res.getBody();
+
+    expect(res.getStatus()).to.equal(200);
+    expect(body.data.user.id).to.equal(bru.getVar("testUserId"));
+    expect(body.data.user.email).to.equal("bruno.local@example.test");
+    expect(body.data.memberships).to.be.an("array");
+    expect(body.meta.requestId).to.be.a("string").and.not.be.empty;
+  });
+}
+
+docs {
+  Antes de la Fase 2, memberships debe ser un arreglo vacío para este usuario.
+}

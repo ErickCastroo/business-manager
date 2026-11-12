@@ -1,0 +1,33 @@
+meta {
+  name: Refresh after logout
+  type: http
+  seq: 6
+  tags: [
+    auth
+    smoke
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/refresh
+  body: none
+  auth: none
+}
+
+tests {
+  test("does not refresh a logged-out session", function () {
+    const body = res.getBody();
+
+    expect(res.getStatus()).to.equal(401);
+    expect(body.error.code).to.be.oneOf([
+      "AUTH_REFRESH_MISSING",
+      "AUTH_REFRESH_REUSED"
+    ]);
+    expect(body.error.requestId).to.be.a("string").and.not.be.empty;
+  });
+}
+
+docs {
+  Acepta MISSING cuando Bruno eliminó la cookie y REUSED cuando el cliente aún
+  envía el valor ya revocado. Ambos resultados impiden renovar la sesión.
+}
