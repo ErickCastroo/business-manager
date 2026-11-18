@@ -1,0 +1,39 @@
+meta {
+  name: List branches
+  type: http
+  seq: 4
+  tags: [
+    tenancy
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/branches
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Business-Id: {{demoBusinessId}}
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const main = res.getBody().data.find((item) => item.isMain);
+    bru.setVar("demoBranchId", main?.id ?? "");
+  }
+}
+
+tests {
+  test("lista sucursales del negocio y encuentra la principal", function () {
+    expect(res.getStatus()).to.equal(200);
+    const branches = res.getBody().data;
+    expect(branches).to.not.be.empty;
+    expect(branches.every((branch) => branch.businessId === bru.getVar("demoBusinessId"))).to.equal(true);
+    expect(bru.getVar("demoBranchId")).to.match(/^[0-9]+$/);
+  });
+}

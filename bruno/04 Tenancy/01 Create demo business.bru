@@ -1,0 +1,52 @@
+meta {
+  name: Create demo business
+  type: http
+  seq: 1
+  tags: [
+    tenancy-onboarding
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/businesses
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "{{demoBusinessName}}",
+    "baseCurrencyCode": "MXN",
+    "timezone": "America/Mazatlan",
+    "mainBranch": {
+      "code": "CENTRO",
+      "name": "Sucursal Centro"
+    }
+  }
+}
+
+script:pre-request {
+  if (!/^http:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/.test(bru.getEnvVar("baseUrl"))) {
+    throw new Error("El negocio demo solo se puede crear en la API local.");
+  }
+}
+
+tests {
+  test("crea el negocio, su sucursal y la membresía", function () {
+    expect(res.getStatus()).to.equal(201);
+    const { data, meta } = res.getBody();
+    expect(data.business.name).to.equal(bru.getEnvVar("demoBusinessName"));
+    expect(data.mainBranch).to.include({ businessId: data.business.id, isMain: true });
+    expect(data.businessUserId).to.match(/^[0-9]+$/);
+    expect(meta.requestId).to.be.a("string").and.not.be.empty;
+  });
+}
+
+docs {
+  Ejecuta esta petición una sola vez con el usuario local de prueba. Cada POST
+  exitoso crea un negocio. Las comprobaciones de lectura se ejecutan por separado.
+}

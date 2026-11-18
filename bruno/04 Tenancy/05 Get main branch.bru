@@ -1,0 +1,33 @@
+meta {
+  name: Get main branch
+  type: http
+  seq: 5
+  tags: [
+    tenancy
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/branches/{{demoBranchId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Business-Id: {{demoBusinessId}}
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("consulta la sucursal principal del negocio seleccionado", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.include({
+      id: bru.getVar("demoBranchId"),
+      businessId: bru.getVar("demoBusinessId"),
+      isMain: true
+    });
+  });
+}

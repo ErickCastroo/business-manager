@@ -1,7 +1,6 @@
 # Colección Bruno de Business Manager
 
-Esta colección prueba los endpoints implementados hasta la Tarea 005. No incluye
-endpoints futuros ni sustituye las pruebas Vitest/Supertest.
+Esta colección prueba los flujos de autenticación y onboarding multiempresa.
 
 ## Requisitos
 
@@ -67,6 +66,24 @@ ejecución. La colección nunca la copia a una variable, al ambiente o al reposi
 4. Selecciona el ambiente `local`.
 5. Ejecuta primero `Setup > Register local test user`.
 6. Después ejecuta `System` y `Auth` en orden.
+
+## Onboarding multiempresa
+
+En Bruno Desktop, selecciona `local` y ejecuta `Auth > Login`. Abre
+`Tenancy > Create demo business` y envía la petición una vez. Un `201` devuelve
+el negocio, su sucursal principal y la membresía del propietario. Cada envío
+exitoso crea otro negocio.
+
+Después puedes ejecutar desde la raíz:
+
+```powershell
+npm run bruno:tenancy
+```
+
+Este comando inicia sesión, selecciona el negocio por `demoBusinessName`, consulta
+sus sucursales y cierra sesión. El ID validado se selecciona con el encabezado
+`X-Business-Id` para las peticiones a sucursales. En Desktop también puedes
+enviar las consultas de `Tenancy` en orden a partir de `List businesses`.
 
 ## Convenciones para las siguientes fases
 

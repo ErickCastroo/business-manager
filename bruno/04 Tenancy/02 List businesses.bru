@@ -1,0 +1,35 @@
+meta {
+  name: List businesses
+  type: http
+  seq: 2
+  tags: [
+    tenancy
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/businesses?pageSize=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const business = res.getBody().data.find(
+      (item) => item.name === bru.getEnvVar("demoBusinessName")
+    );
+    bru.setVar("demoBusinessId", business?.id ?? "");
+  }
+}
+
+tests {
+  test("encuentra el negocio demo en las membresías de la cuenta", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(bru.getVar("demoBusinessId"), "Ejecuta Create demo business primero").to.match(/^[0-9]+$/);
+    expect(res.getBody().meta.pageSize).to.equal(100);
+  });
+}

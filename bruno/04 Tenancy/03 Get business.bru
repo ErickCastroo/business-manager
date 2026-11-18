@@ -1,0 +1,25 @@
+meta {
+  name: Get business
+  type: http
+  seq: 3
+  tags: [
+    tenancy
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/businesses/{{demoBusinessId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("consulta el negocio seleccionado", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.id).to.equal(bru.getVar("demoBusinessId"));
+  });
+}

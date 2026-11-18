@@ -18,7 +18,7 @@ export type AuthRouterOptions = Readonly<{
   security?: AuthSecurity;
 }>;
 
-const disableAuthCaching: RequestHandler = (_request, response, next) => {
+export const disableAuthCaching: RequestHandler = (_request, response, next) => {
   response.setHeader('Cache-Control', 'no-store');
   next();
 };

@@ -2,13 +2,12 @@
 
 ## Estado actual
 
-La Tarea 005 implementa la autenticación global de usuarios. El prefijo de la API
-es `/api/v1` y todos los endpoints de autenticación usan respuestas con `data`,
-`meta.requestId` y códigos de error estables.
+La API implementa autenticación global, alta de negocios y gestión básica de
+sucursales. El prefijo es `/api/v1` y las rutas de aplicación usan respuestas
+con `data`, `meta.requestId` y códigos de error estables.
 
-Esta tarea no crea negocios ni sucursales. Una cuenta recién registrada devuelve
-`memberships: []` en `GET /auth/me` hasta que el onboarding de la Fase 2 asocie al
-usuario con un negocio.
+Una cuenta recién registrada devuelve `memberships: []` en `GET /auth/me` hasta
+que el onboarding asocie al usuario con un negocio.
 
 En desarrollo, la documentación interactiva se publica en:
 
@@ -233,8 +232,56 @@ Invoke-RestMethod `
   -WebSession $webSession
 ```
 
-Usar un correo de prueba único. El registro no crea todavía el negocio ni la
-sucursal; ese flujo pertenece a la Fase 2.
+Usar un correo de prueba único. Después del registro, el token permite llamar
+a `POST /api/v1/businesses` para crear el negocio y su sucursal.
+
+## Negocios y sucursales
+
+Estas rutas requieren `Authorization: Bearer <access-token>`. El ID en la ruta
+del negocio y el encabezado `X-Business-Id` en las rutas de sucursales seleccionan
+un negocio. El servidor comprueba cuenta, negocio, membresía y rol activos antes
+de construir el contexto de autorización. Los cuerpos y consultas se validan
+con esquemas estrictos.
+
+| Método y ruta                                       | Acceso                                                                                         |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `GET /api/v1/businesses`                            | Negocios de la cuenta con permiso `business.read`.                                             |
+| `POST /api/v1/businesses`                           | Cualquier cuenta activa.                                                                       |
+| `GET /api/v1/businesses/:id`                        | `business.read` en el negocio seleccionado.                                                    |
+| `PATCH /api/v1/businesses/:id`                      | `business.settings.manage`. Admite `name` y `timezone`.                                        |
+| `GET /api/v1/branches` y `GET /api/v1/branches/:id` | `X-Business-Id`, `branches.read` y acceso a la sucursal.                                       |
+| `POST /api/v1/branches`                             | `X-Business-Id` y `branches.manage`. Requiere `name` y `code`. `timezone` es opcional.         |
+| `PATCH /api/v1/branches/:id`                        | `X-Business-Id`, `branches.manage` y acceso a la sucursal. Admite `name`, `code` y `timezone`. |
+
+Ejemplo de alta:
+
+```json
+{
+  "name": "Ferretería Centro",
+  "baseCurrencyCode": "MXN",
+  "timezone": "America/Mazatlan",
+  "mainBranch": { "code": "CENTRO", "name": "Sucursal Centro" }
+}
+```
+
+El alta acepta MXN o USD y usa la zona horaria del negocio para la sucursal cuando
+se omite la suya. Devuelve `201` con `data.business`, `data.mainBranch` y
+`data.businessUserId`. Cada alta exitosa crea un nuevo negocio. La misma cuenta
+puede pertenecer a varios. El seed de monedas y permisos debe estar aplicado.
+
+Los propietarios ven todas las sucursales activas. Las otras membresías ven las
+sucursales activas asignadas. Una sucursal nueva se asigna al usuario que la
+creó. `ADMIN` tiene los permisos base salvo `business.settings.manage`.
+`CASHIER`, `INVENTORY` y `FINANCE` reciben permisos de su función.
+
+Las listas admiten `page` (1 por defecto) y `pageSize` (25 por defecto, máximo
+100). Devuelven `data` y `meta` con paginación y `requestId`. Los IDs se
+serializan como cadenas. Un negocio o sucursal fuera del alcance devuelve
+`404 BUSINESS_NOT_FOUND` o `404 BRANCH_NOT_FOUND`. Un miembro sin el permiso
+requerido recibe `403 PERMISSION_DENIED`. Un código de sucursal duplicado en
+un mismo negocio devuelve `409 BRANCH_CODE_ALREADY_EXISTS`.
+
+Para prueba manual, consulta [la colección Bruno](../bruno/README.md).
 
 ## Prueba de integración con SQL Server
 

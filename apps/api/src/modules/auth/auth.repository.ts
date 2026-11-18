@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { BUSINESS_ACTIVE } from '../tenancy/tenant-catalog.js';
 import {
   USER_STATUS,
   type AuthProfileRecord,
@@ -36,6 +37,11 @@ const AUTH_PROFILE_SELECT = {
           id: true,
           name: true,
           timezone: true,
+          branches: {
+            select: { id: true },
+            where: { isActive: true },
+            orderBy: { id: 'asc' },
+          },
         },
       },
       role: {
@@ -58,7 +64,7 @@ const AUTH_PROFILE_SELECT = {
     },
     where: {
       business: {
-        status: USER_STATUS.ACTIVE,
+        status: BUSINESS_ACTIVE,
       },
       isActive: true,
       role: {
@@ -89,8 +95,15 @@ function mapAuthUser(user: SelectedAuthUser): AuthUserRecord {
 function mapAuthProfile(profile: SelectedAuthProfile): AuthProfileRecord {
   return {
     memberships: profile.businessUsers.map((membership) => ({
-      branchIds: membership.userBranchAccesses.map((access) => access.branchId),
-      business: membership.business,
+      branchIds: membership.isOwner
+        ? membership.business.branches.map(({ id }) => id)
+        : membership.userBranchAccesses.map(({ branchId }) => branchId),
+      business: {
+        baseCurrencyCode: membership.business.baseCurrencyCode,
+        id: membership.business.id,
+        name: membership.business.name,
+        timezone: membership.business.timezone,
+      },
       businessUserId: membership.id,
       isOwner: membership.isOwner,
       role: membership.role,

@@ -4,11 +4,14 @@ import express, { type RequestHandler } from 'express';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 
+import { getAuthConfig } from './config/auth.js';
 import { getHttpConfig, type HttpConfig } from './config/http.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { httpLogger } from './middleware/http-logger.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { createAuthRouter, type AuthRouterOptions } from './modules/auth/auth.routes.js';
+import { AuthSecurity } from './modules/auth/auth-security.js';
+import { createTenantRouters } from './modules/tenancy/tenant.routes.js';
 import { createOpenApiDocument } from './openapi.js';
 import { AppError } from './shared/errors/app-error.js';
 
@@ -70,7 +73,12 @@ export function createApp(options: AppOptions = {}): express.Express {
     );
   }
 
-  app.use('/api/v1/auth', createAuthRouter(options.auth));
+  const config = options.auth?.config ?? getAuthConfig();
+  const security = options.auth?.security ?? new AuthSecurity(config);
+  const { businesses, branches } = createTenantRouters(security);
+  app.use('/api/v1/auth', createAuthRouter({ ...options.auth, config, security }));
+  app.use('/api/v1/businesses', businesses);
+  app.use('/api/v1/branches', branches);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

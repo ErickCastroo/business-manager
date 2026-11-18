@@ -34,6 +34,7 @@ La aplicación web queda disponible en `http://localhost:5173` y la API en
 - `npm run audit`: falla si npm detecta vulnerabilidades altas o críticas.
 - `npm run bruno:setup`: prepara idempotentemente el usuario técnico local de Bruno.
 - `npm run bruno:test`: ejecuta la colección Bruno sin repetir el registro inicial.
+- `npm run bruno:tenancy`: prueba las consultas de negocio y sucursal del usuario local.
 - `npm run dev`: inicia web y API en modo de desarrollo.
 - `npm run build`: compila contratos, API y web.
 - `npm run typecheck`: verifica TypeScript estricto en todos los proyectos.
@@ -152,7 +153,7 @@ docs/
   PRODUCT_SPEC.md       Fuente principal de verdad del producto
 ```
 
-El alcance actual llega hasta la Tarea 005: autenticación global del usuario. La
-interfaz todavía no consume los endpoints de auth y el onboarding de negocio y
-sucursal pertenece a la Fase 2. Productos, inventario y reglas financieras siguen
-fuera del alcance actual.
+La Tarea 006 incorpora el backend de onboarding multiempresa y administración
+básica de sucursales. Se puede probar con Swagger o Bruno. La conexión de la
+interfaz al login, onboarding y selectores queda para el siguiente trabajo de
+la Fase 2.

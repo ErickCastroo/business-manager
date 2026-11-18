@@ -102,6 +102,14 @@ en los servicios:
 Estas restricciones no sustituyen la regla de aplicación: toda consulta tenant
 debe filtrar por el `businessId` obtenido del contexto autenticado.
 
+La Tarea 006 usa las tablas de la migración inicial para guardar el negocio, su
+sucursal principal, los cinco roles con sus permisos, la membresía propietaria,
+el acceso inicial y los registros de auditoría en una transacción de SQL Server.
+Las altas y cambios de sucursal también guardan su auditoría dentro de la misma
+transacción. El campo de auditoría guarda los primeros 80 caracteres de
+`requestId` para respetar la longitud de la columna. La respuesta HTTP conserva
+el identificador completo.
+
 ## Migración
 
 La migración inicial está en:
