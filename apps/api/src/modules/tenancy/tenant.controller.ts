@@ -57,15 +57,15 @@ export function selectedBusinessId(request: Request, source: 'path' | 'header'):
   return BigInt(parse(tenantIdSchema, value, 'X-Business-Id'));
 }
 
-function resourceId(request: Request): bigint {
+export function resourceId(request: Request): bigint {
   return BigInt(parse(resourceParamsSchema, request.params, 'params.id').id);
 }
 
-function metadata(request: Request, response: Response) {
+export function metadata(request: Request, response: Response) {
   return { requestId: getResponseRequestId(response), ipAddress: request.ip ?? null };
 }
 
-function paginated<T>(
+export function paginated<T>(
   response: Response,
   { data, total }: { data: T[]; total: number },
   page: PageInput,
@@ -75,6 +75,10 @@ function paginated<T>(
     data,
     meta: { ...envelope.meta, ...page, total, totalPages: Math.ceil(total / page.pageSize) },
   };
+}
+
+export function parsePage(request: Request): PageInput {
+  return parse(pageSchema, request.query, 'query');
 }
 
 export function createTenantController(getService: () => TenantService) {
@@ -87,7 +91,7 @@ export function createTenantController(getService: () => TenantService) {
     response.status(201).json(createSuccessResponse(response, data));
   };
   const listBusinesses: RequestHandler = async (request, response) => {
-    const page = parse(pageSchema, request.query, 'query');
+    const page = parsePage(request);
     const result = await getService().listBusinesses(getAuthenticatedUserId(request), page);
     response.json(paginated(response, result, page));
   };
@@ -104,7 +108,7 @@ export function createTenantController(getService: () => TenantService) {
     response.json(createSuccessResponse(response, data));
   };
   const listBranches: RequestHandler = async (request, response) => {
-    const page = parse(pageSchema, request.query, 'query');
+    const page = parsePage(request);
     const result = await getService().listBranches(getBusinessContext(request), page);
     response.json(paginated(response, result, page));
   };

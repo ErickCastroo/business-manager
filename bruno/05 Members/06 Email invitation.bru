@@ -1,0 +1,38 @@
+meta {
+  name: Email invitation
+  type: http
+  seq: 6
+  tags: [
+    members
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/users/invitations/email
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-Business-Id: {{demoBusinessId}}
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "{{inviteEmail}}",
+    "roleId": "{{inviteRoleId}}",
+    "branchIds": ["{{demoBranchId}}"]
+  }
+}
+
+tests {
+  test("confirma el envío sin exponer el código", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().data.sent).to.equal(true);
+    expect(res.getBody().data).not.to.have.property("invitationCode");
+  });
+}

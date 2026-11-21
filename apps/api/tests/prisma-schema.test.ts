@@ -10,6 +10,13 @@ const migrationLock = readFileSync(
   new URL('../prisma/migrations/migration_lock.toml', import.meta.url),
   'utf8',
 );
+const invitationMigration = readFileSync(
+  new URL(
+    '../prisma/migrations/20261119120000_membership_invitations/migration.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
 
 const EXPECTED_MODELS = [
   'AuditLog',
@@ -17,6 +24,7 @@ const EXPECTED_MODELS = [
   'Business',
   'BusinessUser',
   'Currency',
+  'MembershipInvitation',
   'Permission',
   'RefreshToken',
   'Role',
@@ -26,7 +34,7 @@ const EXPECTED_MODELS = [
 ] as const;
 
 describe('Prisma SQL Server schema', () => {
-  it('uses the SQL Server provider and only the Task 004 models', () => {
+  it('uses the SQL Server provider and the security and membership models', () => {
     const models = [...schema.matchAll(/^model\s+(\w+)\s+\{/gm)].map((match) => match[1]).sort();
 
     expect(schema).toMatch(/datasource\s+db\s+\{[\s\S]*?provider\s*=\s*"sqlserver"/);
@@ -55,7 +63,7 @@ describe('Prisma SQL Server schema', () => {
     expect(migration).toContain('BEGIN TRAN;');
     expect(migration).toContain('COMMIT TRAN;');
     expect(migration).toContain('ROLLBACK TRAN;');
-    expect(createdTables).toHaveLength(EXPECTED_MODELS.length);
+    expect(createdTables).toHaveLength(11);
     expect(createdTables).toEqual(
       expect.arrayContaining([
         'Currencies',
@@ -71,5 +79,12 @@ describe('Prisma SQL Server schema', () => {
         'AuditLogs',
       ]),
     );
+  });
+
+  it('adds tenant-safe invitations in a separate migration', () => {
+    expect(invitationMigration).toContain('CREATE TABLE [dbo].[MembershipInvitations]');
+    expect(invitationMigration).toContain('UNIQUE NONCLUSTERED ([BusinessId], [Email])');
+    expect(invitationMigration).toContain('REFERENCES [dbo].[Roles]([BusinessId], [RoleId])');
+    expect(invitationMigration).toContain('ROLLBACK TRAN;');
   });
 });

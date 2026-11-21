@@ -153,7 +153,46 @@ docs/
   PRODUCT_SPEC.md       Fuente principal de verdad del producto
 ```
 
-La Tarea 006 incorpora el backend de onboarding multiempresa y administración
-básica de sucursales. Se puede probar con Swagger o Bruno. La conexión de la
-interfaz al login, onboarding y selectores queda para el siguiente trabajo de
-la Fase 2.
+La web permite iniciar sesión, registrar una cuenta y crear el primer negocio
+con su sucursal principal. El encabezado del panel muestra el rol y permite
+cambiar entre los negocios y sucursales accesibles para la cuenta.
+
+Con SQL Server preparado y los catálogos iniciales cargados, ejecuta `npm run dev`
+desde la raíz y abre `http://localhost:5173`. Usa **Crear cuenta** para probar el
+flujo completo, o inicia sesión con una cuenta local ya registrada.
+
+Vite lee `VITE_API_URL` desde el entorno del monorepo. Por defecto se conecta
+a `http://localhost:4000/api/v1`. Usa el mismo nombre de host para la API y
+la web en desarrollo, y agrega el origen de la web a `CORS_ORIGINS` cuando
+cambies el puerto. En despliegue se puede usar `VITE_API_URL=/api/v1` si el
+proxy publica ambas aplicaciones bajo el mismo origen.
+
+El token de acceso vive en memoria, y la cookie `HttpOnly` permite recuperar la
+sesión al recargar. La selección de negocio y sucursal vive en el panel. Al
+cambiar de negocio, la web vuelve a consultar las sucursales disponibles para
+ese contexto.
+
+La Tarea 008 incorpora las rutas de miembros, roles e invitaciones. Para
+probarlas, aplica la migración de SQL Server con
+`npm run prisma:deploy -w @business-manager/api` y usa Swagger o la sección
+`Members` de Bruno. El paso a paso está en [docs/API.md](docs/API.md).
+
+Desde **Administración → Usuarios y roles**, el propietario puede elegir
+el rol y las sucursales y pulsar **Enviar invitación**. Si el correo aún no tiene
+cuenta, el enlace abre el registro y después muestra **Aceptar invitación**. Si
+ya tiene cuenta, la persona inicia sesión si hace falta y luego confirma el acceso.
+Debe usar el correo invitado. El enlace vence en 48 horas y se consume al confirmar.
+Mientras el correo no esté configurado, **Generar enlace** permite copiarlo y
+compartirlo en privado. Este enlace usa la dirección de la web abierta en el
+navegador. Si la dirección es `localhost`, úsalo para probar en ese mismo equipo.
+
+Para habilitar el envío, completa en el `.env` de la raíz `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_FROM`, `SMTP_USER` y `SMTP_PASSWORD` según tu remitente.
+Usa `INVITATION_WEB_URL` con la dirección HTTPS de la web que pueda abrir el
+destinatario. Si el servidor usa un relay sin autenticación, deja juntos vacíos
+`SMTP_USER` y `SMTP_PASSWORD`. El puerto 465 usa TLS implícito y los demás
+requieren STARTTLS fuera de localhost. Reinicia la API al cambiar el `.env`.
+
+Para una prueba solo en tu PC, apunta a un servidor de captura SMTP en
+`127.0.0.1` y a `INVITATION_WEB_URL=http://localhost:5173`. Usa exclusivamente
+direcciones de prueba y abre el correo desde la bandeja local del capturador.

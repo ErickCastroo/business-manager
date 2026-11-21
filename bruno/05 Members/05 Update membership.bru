@@ -1,0 +1,35 @@
+meta {
+  name: Update membership
+  type: http
+  seq: 5
+  tags: [
+    members
+  ]
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/users/{{targetMemberId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-Business-Id: {{demoBusinessId}}
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "branchIds": ["{{demoBranchId}}"]
+  }
+}
+
+tests {
+  test("actualiza las sucursales de la membresía seleccionada", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.branchIds).to.deep.equal([bru.getVar("demoBranchId")]);
+  });
+}

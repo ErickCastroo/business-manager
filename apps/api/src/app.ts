@@ -11,6 +11,11 @@ import { httpLogger } from './middleware/http-logger.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { createAuthRouter, type AuthRouterOptions } from './modules/auth/auth.routes.js';
 import { AuthSecurity } from './modules/auth/auth-security.js';
+import {
+  createInvitationMailer,
+  type InvitationMailer,
+} from './modules/members/invitation-mailer.js';
+import { createMembersRouters } from './modules/members/members.routes.js';
 import { createTenantRouters } from './modules/tenancy/tenant.routes.js';
 import { createOpenApiDocument } from './openapi.js';
 import { AppError } from './shared/errors/app-error.js';
@@ -23,6 +28,7 @@ const removeContentSecurityPolicy: RequestHandler = (_request, response, next) =
 export type AppOptions = Readonly<{
   auth?: AuthRouterOptions;
   exposeApiDocs?: boolean;
+  invitationMailer?: InvitationMailer | null;
   http?: HttpConfig;
 }>;
 
@@ -76,9 +82,14 @@ export function createApp(options: AppOptions = {}): express.Express {
   const config = options.auth?.config ?? getAuthConfig();
   const security = options.auth?.security ?? new AuthSecurity(config);
   const { businesses, branches } = createTenantRouters(security);
+  const mailer =
+    options.invitationMailer === undefined ? createInvitationMailer() : options.invitationMailer;
+  const { users, roles } = createMembersRouters(security, config, mailer);
   app.use('/api/v1/auth', createAuthRouter({ ...options.auth, config, security }));
   app.use('/api/v1/businesses', businesses);
   app.use('/api/v1/branches', branches);
+  app.use('/api/v1/users', users);
+  app.use('/api/v1/roles', roles);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

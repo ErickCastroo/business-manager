@@ -283,6 +283,47 @@ un mismo negocio devuelve `409 BRANCH_CODE_ALREADY_EXISTS`.
 
 Para prueba manual, consulta [la colección Bruno](../bruno/README.md).
 
+## Usuarios, roles e invitaciones
+
+| Método y ruta                           | Acceso                                                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `GET /api/v1/users`                     | Requiere `X-Business-Id` y `users.read`. Admite `page` y `pageSize`.                          |
+| `GET /api/v1/roles`                     | Requiere `X-Business-Id` y `users.read`. Devuelve roles activos y sus permisos.               |
+| `POST /api/v1/users/invitations`        | Requiere `X-Business-Id`, `users.manage` y ser propietario.                                   |
+| `POST /api/v1/users/invitations/accept` | Requiere iniciar sesión con el correo invitado. El código identifica el negocio.              |
+| `PATCH /api/v1/users/:id`               | Requiere `X-Business-Id`, `users.manage` y ser propietario. El ID corresponde a la membresía. |
+
+Para emitir la invitación, envía `email`, `roleId` y `branchIds`. Obtén los IDs con
+`GET /roles` y `GET /branches`. El correo invitado puede registrarse antes o después
+de la emisión. El código vence a las 48 horas y se devuelve una vez junto con
+`expiresAt`. Compártelo en privado con el destinatario. Emitir otro código para
+el mismo correo y negocio reemplaza al anterior.
+
+El destinatario inicia sesión con el correo invitado y envía `{ "invitationCode": "…" }`
+en el cuerpo de la petición de aceptación. Esta devuelve `201` con la nueva
+membresía. Un código vencido, consumido, reemplazado o presentado por otra cuenta
+devuelve `404 INVITATION_UNAVAILABLE`. Una cuenta que ya tiene membresía recibe
+`409 MEMBER_ALREADY_EXISTS`. La emisión manual funciona desde Swagger o Bruno.
+
+`POST /api/v1/users/invitations/email` usa los mismos permisos y datos de la
+emisión manual. Responde `201` con `sent: true` y `expiresAt` cuando SMTP acepta
+el mensaje. Si falta configuración devuelve `503 INVITATION_EMAIL_UNAVAILABLE`
+antes de emitir el código. Si SMTP no confirma la operación devuelve
+`502 INVITATION_EMAIL_FAILED`. El envío ocurre después de registrar la invitación.
+Reintentar o generar un enlace manual reemplaza el código anterior.
+La dirección pública del enlace se configura con `INVITATION_WEB_URL`.
+Si el correo aún no tiene una cuenta, el enlace abre `/registro?continuar=invitacion`
+y el flujo vuelve a `/invitacion` al completar el registro. Si el correo ya tiene
+una cuenta, el enlace apunta a `/invitacion` directamente. El código viaja en
+el fragmento del enlace y la API lo recibe al confirmar la invitación.
+
+La edición admite `roleId`, `branchIds` e `isActive`. Enviar `branchIds` reemplaza
+las asignaciones. Un arreglo vacío deja al usuario sin sucursales asignadas.
+La desactivación afecta únicamente a la membresía del negocio. El rol `OWNER`
+y la membresía propietaria están protegidos. El listado de membresías muestra
+las asignaciones explícitas a sucursales visibles para el solicitante. Para un
+propietario, `isOwner` indica acceso a todas las sucursales activas.
+
 ## Prueba de integración con SQL Server
 
 La prueba crea dos usuarios con correos aleatorios, valida los cinco flujos contra

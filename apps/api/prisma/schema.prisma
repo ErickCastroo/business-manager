@@ -39,23 +39,24 @@ model User {
 }
 
 model Business {
-  id                 BigInt         @id @default(autoincrement()) @map("BusinessId")
-  name               String         @map("Name") @db.NVarChar(150)
-  legalName          String?        @map("LegalName") @db.NVarChar(200)
-  taxId              String?        @map("TaxId") @db.NVarChar(30)
-  email              String?        @map("Email") @db.NVarChar(200)
-  phone              String?        @map("Phone") @db.NVarChar(30)
-  baseCurrencyCode   String         @map("BaseCurrencyCode") @db.Char(3)
-  timezone           String         @map("Timezone") @db.NVarChar(80)
-  allowNegativeStock Boolean        @default(false) @map("AllowNegativeStock") @db.Bit
-  status             Int            @map("Status") @db.TinyInt
-  createdAt          DateTime       @default(now()) @map("CreatedAt") @db.DateTime2
-  updatedAt          DateTime?      @updatedAt @map("UpdatedAt") @db.DateTime2
-  baseCurrency       Currency       @relation(fields: [baseCurrencyCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
+  id                 BigInt                 @id @default(autoincrement()) @map("BusinessId")
+  name               String                 @map("Name") @db.NVarChar(150)
+  legalName          String?                @map("LegalName") @db.NVarChar(200)
+  taxId              String?                @map("TaxId") @db.NVarChar(30)
+  email              String?                @map("Email") @db.NVarChar(200)
+  phone              String?                @map("Phone") @db.NVarChar(30)
+  baseCurrencyCode   String                 @map("BaseCurrencyCode") @db.Char(3)
+  timezone           String                 @map("Timezone") @db.NVarChar(80)
+  allowNegativeStock Boolean                @default(false) @map("AllowNegativeStock") @db.Bit
+  status             Int                    @map("Status") @db.TinyInt
+  createdAt          DateTime               @default(now()) @map("CreatedAt") @db.DateTime2
+  updatedAt          DateTime?              @updatedAt @map("UpdatedAt") @db.DateTime2
+  baseCurrency       Currency               @relation(fields: [baseCurrencyCode], references: [code], onDelete: NoAction, onUpdate: NoAction)
   branches           Branch[]
   roles              Role[]
   businessUsers      BusinessUser[]
   auditLogs          AuditLog[]
+  invitations        MembershipInvitation[]
 
   @@index([baseCurrencyCode], map: "IX_Businesses_BaseCurrencyCode")
   @@map("Businesses")
@@ -88,16 +89,17 @@ model Branch {
 }
 
 model Role {
-  id              BigInt           @id @default(autoincrement()) @map("RoleId")
-  businessId      BigInt           @map("BusinessId")
-  code            String           @map("Code") @db.NVarChar(50)
-  name            String           @map("Name") @db.NVarChar(80)
-  description     String?          @map("Description") @db.NVarChar(250)
-  isSystem        Boolean          @map("IsSystem") @db.Bit
-  isActive        Boolean          @map("IsActive") @db.Bit
-  business        Business         @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id              BigInt                 @id @default(autoincrement()) @map("RoleId")
+  businessId      BigInt                 @map("BusinessId")
+  code            String                 @map("Code") @db.NVarChar(50)
+  name            String                 @map("Name") @db.NVarChar(80)
+  description     String?                @map("Description") @db.NVarChar(250)
+  isSystem        Boolean                @map("IsSystem") @db.Bit
+  isActive        Boolean                @map("IsActive") @db.Bit
+  business        Business               @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rolePermissions RolePermission[]
   businessUsers   BusinessUser[]
+  invitations     MembershipInvitation[]
 
   @@unique([businessId, code], map: "UQ_Roles_BusinessId_Code")
   @@unique([businessId, id], map: "AK_Roles_BusinessId_RoleId")
@@ -155,6 +157,23 @@ model UserBranchAccess {
   @@id([businessUserId, branchId], map: "PK_UserBranchAccess")
   @@index([businessId, branchId], map: "IX_UserBranchAccess_BusinessId_BranchId")
   @@map("UserBranchAccess")
+}
+
+model MembershipInvitation {
+  id         BigInt    @id @default(autoincrement()) @map("MembershipInvitationId")
+  businessId BigInt    @map("BusinessId")
+  email      String    @map("Email") @db.NVarChar(200)
+  roleId     BigInt    @map("RoleId")
+  branchIds  String    @map("BranchIdsJson") @db.NVarChar(Max)
+  tokenHash  String    @unique(map: "UQ_MembershipInvitations_TokenHash") @map("TokenHash") @db.Char(64)
+  expiresAt  DateTime  @map("ExpiresAt") @db.DateTime2
+  acceptedAt DateTime? @map("AcceptedAt") @db.DateTime2
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role       Role      @relation(fields: [businessId, roleId], references: [businessId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([businessId, email], map: "UQ_MembershipInvitations_BusinessId_Email")
+  @@index([businessId, roleId], map: "IX_MembershipInvitations_BusinessId_RoleId")
+  @@map("MembershipInvitations")
 }
 
 model RefreshToken {

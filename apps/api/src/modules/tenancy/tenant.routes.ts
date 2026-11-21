@@ -21,7 +21,10 @@ import {
 } from './tenant.controller.js';
 import { TenantService } from './tenant.service.js';
 
-function requireBusiness(source: 'path' | 'header', permission: PermissionCode): RequestHandler {
+export function requireBusiness(
+  source: 'path' | 'header',
+  permission: PermissionCode,
+): RequestHandler {
   return async (request, _response, next) => {
     const businessId = selectedBusinessId(request, source);
     const context = await resolveBusinessContext(

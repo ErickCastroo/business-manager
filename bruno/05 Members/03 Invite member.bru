@@ -1,0 +1,43 @@
+meta {
+  name: Invite member
+  type: http
+  seq: 3
+  tags: [
+    members
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/users/invitations
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-Business-Id: {{demoBusinessId}}
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "{{inviteEmail}}",
+    "roleId": "{{inviteRoleId}}",
+    "branchIds": ["{{demoBranchId}}"]
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("invitationCode", res.getBody().data.invitationCode);
+  }
+}
+
+tests {
+  test("emite un código temporal", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(/^[A-Za-z0-9_-]{43}$/.test(res.getBody().data.invitationCode)).to.equal(true);
+  });
+}

@@ -85,6 +85,26 @@ sus sucursales y cierra sesión. El ID validado se selecciona con el encabezado
 `X-Business-Id` para las peticiones a sucursales. En Desktop también puedes
 enviar las consultas de `Tenancy` en orden a partir de `List businesses`.
 
+## Usuarios e invitaciones
+
+En Bruno Desktop, inicia sesión con el propietario demo y ejecuta `Tenancy > List
+businesses` y `Tenancy > List branches` para cargar la empresa y sucursal.
+`Members > List roles` carga los roles y toma `CASHIER` como ejemplo.
+`Members > List users` muestra las membresías.
+
+Para probar una invitación, configura `inviteEmail` en un ambiente privado con
+un correo de prueba. Ejecuta `Members > Invite member`, cambia el token con un
+login de la cuenta invitada y ejecuta `Members > Accept invitation`. La colección
+conserva el código en una variable de ejecución y la vacía al aceptarlo.
+Para probar **Email invitation**, configura SMTP en la API y usa un capturador
+local con un correo de prueba. Abre el enlace que aparece en el mensaje para
+confirmar el alta desde la web. Con un correo sin cuenta, el enlace abre el
+registro antes de la confirmación. Con una cuenta existente, solicita iniciar
+sesión si hace falta.
+Para `Members > Update membership` vuelve a iniciar sesión con el propietario.
+Estas peticiones se ejecutan individualmente. Los comandos habituales de Bruno
+las excluyen para que cada ejecución tenga un objetivo de prueba definido.
+
 ## Convenciones para las siguientes fases
 
 - Crear una carpeta por dominio (`Businesses`, `Branches`, `Products`, etc.).

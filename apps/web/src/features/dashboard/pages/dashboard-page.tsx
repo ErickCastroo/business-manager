@@ -17,7 +17,8 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useOutletContext } from 'react-router';
+import type { ActiveTenant } from '@/features/tenancy/use-active-tenant';
 
 import { MetricCard } from '@/components/metric-card';
 import { PageHeader } from '@/components/page-header';
@@ -51,6 +52,7 @@ const setupSteps = [
 
 export function DashboardPage() {
   const [period, setPeriod] = useState<(typeof periodOptions)[number]>('Este mes');
+  const { membership } = useOutletContext<Pick<ActiveTenant, 'membership'>>();
 
   return (
     <div className="space-y-5">
@@ -176,6 +178,8 @@ export function DashboardPage() {
           <CardContent className="px-5 py-2">
             {setupSteps.map((step, index) => {
               const Icon = step.icon;
+              const completed =
+                index === 0 || (index === 1 && Boolean(membership?.branchIds.length));
 
               return (
                 <div key={step.label}>
@@ -190,7 +194,7 @@ export function DashboardPage() {
                       className="border-slate-200 text-[0.65rem] text-slate-500"
                       variant="outline"
                     >
-                      Pendiente
+                      {completed ? 'Listo' : 'Pendiente'}
                     </Badge>
                   </div>
                   {index < setupSteps.length - 1 && <Separator />}

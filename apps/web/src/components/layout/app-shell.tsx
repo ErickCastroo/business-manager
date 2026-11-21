@@ -4,11 +4,13 @@ import { Outlet } from 'react-router';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { useActiveTenant } from '@/features/tenancy/use-active-tenant';
 import { cn } from '@/lib/utils';
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const tenant = useActiveTenant();
 
   return (
     <div className="min-h-svh bg-[#f5f7fb]">
@@ -36,11 +38,15 @@ export function AppShell() {
       >
         <AppHeader
           collapsed={collapsed}
+          tenant={tenant}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           onToggleSidebar={() => setCollapsed((current) => !current)}
         />
         <main className="mx-auto w-full max-w-[1600px] p-4 sm:p-5 lg:p-6" id="main-content">
-          <Outlet />
+          <Outlet
+            key={JSON.stringify([tenant.membership?.business.id, tenant.branch?.id])}
+            context={tenant}
+          />
         </main>
       </div>
 

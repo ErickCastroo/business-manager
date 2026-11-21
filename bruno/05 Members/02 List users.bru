@@ -1,0 +1,32 @@
+meta {
+  name: List users
+  type: http
+  seq: 2
+  tags: [
+    members
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/users
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Business-Id: {{demoBusinessId}}
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("lista únicamente miembros del negocio elegido", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.every(
+      (member) => member.businessId === bru.getVar("demoBusinessId")
+    )).to.equal(true);
+    expect(res.getBody().meta.total).to.be.at.least(1);
+  });
+}

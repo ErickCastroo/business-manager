@@ -1,18 +1,25 @@
 import {
+  acceptInvitationSchema,
   authSessionDataSchema,
   branchDataSchema,
   businessDataSchema,
   createBranchSchema,
   createBusinessSchema,
+  emailInvitationDataSchema,
+  invitationDataSchema,
+  inviteMemberSchema,
   loginRequestSchema,
   logoutDataSchema,
   meDataSchema,
+  memberDataSchema,
+  memberRoleSchema,
   onboardingDataSchema,
   refreshDataSchema,
   registerRequestSchema,
   tenantIdSchema,
   updateBranchSchema,
   updateBusinessSchema,
+  updateMemberSchema,
 } from '@business-manager/contracts';
 import { z } from 'zod';
 
@@ -70,7 +77,11 @@ function tenantOperation(options: {
   businessHeader?: boolean;
   paginated?: boolean;
   created?: boolean;
-  conflict?: boolean;
+  conflict?: string;
+  notFound?: string;
+  description?: string;
+  rateLimited?: boolean;
+  emailDelivery?: boolean;
   onboarding?: boolean;
 }) {
   const envelope = options.paginated
@@ -89,7 +100,9 @@ function tenantOperation(options: {
 
   return {
     summary: options.summary,
-    description: options.permission ? `Permiso requerido: ${options.permission}.` : undefined,
+    description:
+      options.description ??
+      (options.permission ? `Permiso requerido: ${options.permission}.` : undefined),
     tags: [options.tag],
     security: [{ bearerAuth: [] }],
     parameters: [
@@ -121,11 +134,16 @@ function tenantOperation(options: {
       400: documentedError('Datos, parámetros o selección de negocio inválidos.'),
       401: documentedError('Access token ausente, inválido o expirado.'),
       403: documentedError('Permiso insuficiente o cuenta deshabilitada.'),
-      ...(options.permission && {
-        404: documentedError('El negocio o la sucursal no está disponible.'),
+      ...((options.permission || options.notFound) && {
+        404: documentedError(options.notFound ?? 'El negocio o la sucursal no está disponible.'),
       }),
       ...(options.conflict && {
-        409: documentedError('El código de sucursal ya existe en este negocio.'),
+        409: documentedError(options.conflict),
+      }),
+      ...(options.rateLimited && { 429: documentedError('Límite de intentos excedido.') }),
+      ...(options.emailDelivery && {
+        502: documentedError('El servidor SMTP no confirmó el envío.'),
+        503: documentedError('El envío por correo no está configurado.'),
       }),
       ...(options.onboarding && {
         503: documentedError('Catálogo inicial de monedas o permisos no disponible.'),
@@ -181,7 +199,7 @@ const tenantPaths = {
       permission: 'branches.manage',
       body: createBranchSchema,
       created: true,
-      conflict: true,
+      conflict: 'El código de sucursal ya existe en este negocio.',
     }),
   },
   '/api/v1/branches/{id}': {
@@ -197,7 +215,87 @@ const tenantPaths = {
       id: true,
       permission: 'branches.manage',
       body: updateBranchSchema,
-      conflict: true,
+      conflict: 'El código de sucursal ya existe en este negocio.',
+    }),
+  },
+};
+
+const memberPaths = {
+  '/api/v1/users': {
+    get: tenantOperation({
+      tag: 'Users',
+      data: memberDataSchema,
+      summary: 'Listar membresías del negocio',
+      businessHeader: true,
+      permission: 'users.read',
+      paginated: true,
+    }),
+  },
+  '/api/v1/users/{id}': {
+    patch: tenantOperation({
+      tag: 'Users',
+      data: memberDataSchema,
+      summary: 'Actualizar una membresía',
+      businessHeader: true,
+      permission: 'users.manage',
+      id: true,
+      body: updateMemberSchema,
+      description:
+        'Requiere ser propietario y tener users.manage. El ID es de la membresía. branchIds reemplaza las asignaciones al enviarse.',
+      notFound: 'La membresía no está disponible en el negocio seleccionado.',
+    }),
+  },
+  '/api/v1/users/invitations': {
+    post: tenantOperation({
+      tag: 'Users',
+      data: invitationDataSchema,
+      summary: 'Emitir código de invitación',
+      businessHeader: true,
+      permission: 'users.manage',
+      body: inviteMemberSchema,
+      created: true,
+      description:
+        'Requiere ser propietario y tener users.manage. El código privado vence a las 48 horas. Una nueva emisión invalida el código anterior.',
+      conflict: 'La cuenta ya tiene una membresía en este negocio.',
+    }),
+  },
+  '/api/v1/users/invitations/email': {
+    post: tenantOperation({
+      tag: 'Users',
+      data: emailInvitationDataSchema,
+      summary: 'Enviar invitación por correo',
+      businessHeader: true,
+      permission: 'users.manage',
+      body: inviteMemberSchema,
+      created: true,
+      rateLimited: true,
+      emailDelivery: true,
+      description:
+        'Requiere propietario. El enlace lleva a registro si el correo aún no tiene cuenta. La API responde cuando SMTP acepta el mensaje.',
+      conflict: 'La cuenta ya tiene una membresía en este negocio.',
+    }),
+  },
+  '/api/v1/users/invitations/accept': {
+    post: tenantOperation({
+      tag: 'Users',
+      data: memberDataSchema,
+      summary: 'Aceptar una invitación',
+      body: acceptInvitationSchema,
+      created: true,
+      rateLimited: true,
+      description:
+        'Requiere la sesión de la cuenta con el correo invitado. La invitación determina el negocio, el rol y las sucursales.',
+      notFound: 'La invitación no está disponible para esta cuenta.',
+      conflict: 'La cuenta ya tiene una membresía en este negocio.',
+    }),
+  },
+  '/api/v1/roles': {
+    get: tenantOperation({
+      tag: 'Users',
+      data: z.array(memberRoleSchema),
+      summary: 'Listar roles activos y permisos',
+      businessHeader: true,
+      permission: 'users.read',
     }),
   },
 };
@@ -226,6 +324,7 @@ export function createOpenApiDocument() {
     openapi: '3.1.0',
     paths: {
       ...tenantPaths,
+      ...memberPaths,
       '/api/v1/auth/login': {
         post: {
           requestBody: {

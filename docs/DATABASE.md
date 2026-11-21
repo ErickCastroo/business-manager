@@ -110,6 +110,13 @@ transacción. El campo de auditoría guarda los primeros 80 caracteres de
 `requestId` para respetar la longitud de la columna. La respuesta HTTP conserva
 el identificador completo.
 
+La Tarea 008 agrega `MembershipInvitations`. La tabla guarda el hash SHA-256 del
+código, el correo, el rol del mismo negocio, las sucursales elegidas y el
+vencimiento. La API vuelve a validar las sucursales antes de transformar la
+invitación en asignaciones con claves foráneas. Consumir el código, crear la
+membresía y registrar el evento de auditoría comparten una transacción. Las
+ediciones de rol, estado y sucursales también se auditan en la transacción.
+
 ## Migración
 
 La migración inicial está en:

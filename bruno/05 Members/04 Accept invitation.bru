@@ -1,0 +1,38 @@
+meta {
+  name: Accept invitation
+  type: http
+  seq: 4
+  tags: [
+    members
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/users/invitations/accept
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "invitationCode": "{{invitationCode}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("targetMemberId", res.getBody().data.id);
+    bru.setVar("invitationCode", "");
+  }
+}
+
+tests {
+  test("crea la membresía para la cuenta invitada", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().data.businessId).to.equal(bru.getVar("demoBusinessId"));
+  });
+}
